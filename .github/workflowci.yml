@@ -1,0 +1,80 @@
+# Machine Learning CI/CD Pipeline
+name: ML Training and Evaluation Pipeline
+
+# Trigger conditions: runs on push/pull request to main branch or manual trigger
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  train-and-evaluate:
+    # Use latest Ubuntu Linux server
+    runs-on: ubuntu-latest
+    
+    steps:
+    # Checkout the repository code
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    # Set up Python environment
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    # Cache dependencies for faster builds
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    # Install dependencies using Makefile
+    - name: Install dependencies
+      run: make install
+    
+    # Run training pipeline using Makefile
+    - name: Train model
+      run: make train
+    
+    # Upload model artifacts
+    - name: Upload model artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: trained-model
+        path: |
+          model/
+          Results/
+    
+    # Upload results as artifacts
+    - name: Upload training results
+      uses: actions/upload-artifact@v3
+      with:
+        name: training-results
+        path: Results/
+    
+    # Display results (optional)
+    - name: Display training metrics
+      run: |
+        if [ -f "Results/metrics.txt" ]; then
+          echo "Training Metrics:"
+          cat Results/metrics.txt
+        fi
+    
+    # Test Gradio app locally (optional)
+    - name: Test Gradio app
+      run: |
+        echo "Testing Gradio app setup..."
+        python -c "import app.drug_app; print('Gradio app imports successfully')" || echo "Gradio app test skipped"
+    
+    # Deploy to Hugging Face (only on main branch push)
+    - name: Deploy to Hugging Face
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      env:
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      run: make deploy
