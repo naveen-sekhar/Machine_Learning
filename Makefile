@@ -49,6 +49,7 @@ hf-login:
 	huggingface-cli login --token $(HF_TOKEN) --add-to-git-credential
 
 push-hub:
+	huggingface-cli upload naveen-sekhar/drug-classification ./README.md --repo-type=space --commit-message="Update README"
 	huggingface-cli upload naveen-sekhar/drug-classification ./app --repo-type=space --commit-message="Sync App files"
 	huggingface-cli upload naveen-sekhar/drug-classification ./model --repo-type=space --commit-message="Sync Model"
 	huggingface-cli upload naveen-sekhar/drug-classification ./Results --repo-type=space --commit-message="Sync Results"
