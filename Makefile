@@ -1,55 +1,33 @@
-# Makefile for ML Pipeline
-.PHONY: install train test clean help
-
-# Default target
-help:
-	@echo "Available commands:"
-	@echo "  install    - Install dependencies"
-	@echo "  train      - Train the machine learning model"
-	@echo "  test       - Run tests (placeholder)"
-	@echo "  clean      - Clean generated files"
-	@echo "  all        - Run complete pipeline (install + train)"
-
-# Install dependencies
 install:
 	pip install --upgrade pip
-	pip install -r app/requirements.txt
+	pip install -r requirements.txt
 
-# Create necessary directories
-setup:
-	mkdir -p model Results
+train:
+	python3 train.py
 
-# Train the model
-train: setup
-	cd app && python train_fixed.py
+eval:
+	echo "## Model Metrics" > report.md
+	cat Results/metrics.txt >> report.md
+	echo '\n## Confusion Matrix Plot' >> report.md
+	echo '![Confusion Matrix](./Results/model_results.png)' >> report.md
+	cml comment create report.md
 
-# Run tests (placeholder - you can add actual tests later)
-test:
-	@echo "Running tests..."
-	@echo "No tests defined yet. Add your test commands here."
+update-branch:
+	git config --global user.name "naveensekhar"
+	git config --global user.email "naveensekhar1547@gmail.com"
+	git add Model Results
+	git commit -m "Update model and results"
+	git push --force origin HEAD:update
 
-# Clean generated files
-clean:
-	rm -rf model/*.joblib
-	rm -rf Results/*.txt
-	rm -rf Results/*.png
-	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	find . -name "*.pyc" -delete 2>/dev/null || true
-
-# Run complete pipeline
-all: install train
-	@echo "Pipeline completed successfully!"
-
-# Deploy to Hugging Face Hub
 hf-login:
+	git pull origin update || true
+	git switch update || true
 	pip install -U "huggingface_hub[cli]"
-	huggingface-cli login --token $(HF_TOKEN) --add-to-git-credential
+	huggingface-cli login --token $(HF) --add-to-git-credential
 
 push-hub:
-	huggingface-cli upload naveen-sekhar/drug-classification ./README.md --repo-type=space --commit-message="Update README"
-	huggingface-cli upload naveen-sekhar/drug-classification ./app --repo-type=space --commit-message="Sync App files"
-	huggingface-cli upload naveen-sekhar/drug-classification ./model --repo-type=space --commit-message="Sync Model"
-	huggingface-cli upload naveen-sekhar/drug-classification ./Results --repo-type=space --commit-message="Sync Results"
+	huggingface-cli upload yourHFusername/DRUG_CLASSIFY ./App --repo-type=space --commit-message="Sync App files"
+	huggingface-cli upload yourHFusername/DRUG_CLASSIFY ./Model --repo-type=space --commit-message="Sync Model"
+	huggingface-cli upload yourHFusername/DRUG_CLASSIFY ./Results --repo-type=space --commit-message="Sync Results"
 
 deploy: hf-login push-hub
-	@echo "Deployment to Hugging Face completed!"
