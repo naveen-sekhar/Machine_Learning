@@ -17,8 +17,7 @@ install:
 
 # Create necessary directories
 setup:
-	@if not exist "model" mkdir model
-	@if not exist "Results" mkdir Results
+	mkdir -p model Results
 
 # Train the model
 train: setup
@@ -31,11 +30,11 @@ test:
 
 # Clean generated files
 clean:
-	@if exist "model\*.joblib" del /q "model\*.joblib"
-	@if exist "Results\*.txt" del /q "Results\*.txt"
-	@if exist "Results\*.png" del /q "Results\*.png"
-	@for /d /r . %%d in (__pycache__) do @if exist "%%d" rd /s /q "%%d"
-	@del /s /q *.pyc 2>nul || echo No .pyc files found
+	rm -rf model/*.joblib
+	rm -rf Results/*.txt
+	rm -rf Results/*.png
+	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	find . -name "*.pyc" -delete 2>/dev/null || true
 
 # Run complete pipeline
 all: install train
@@ -43,8 +42,6 @@ all: install train
 
 # Deploy to Hugging Face Hub
 hf-login:
-	git pull origin update || true
-	git switch update || true
 	pip install -U "huggingface_hub[cli]"
 	huggingface-cli login --token $(HF_TOKEN) --add-to-git-credential
 
